@@ -1,0 +1,5 @@
+import { serializeJsonLd, type Json } from "@/lib/jsonld";
+
+export function JsonLd({ data }: { data: Json }) {
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }} />;
+}
