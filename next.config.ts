@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 // Product and blog images are served by the API (or a CDN in front of it).
 const mediaUrl = new URL(process.env.MEDIA_URL ?? process.env.API_URL ?? "http://localhost:4000");
+// Vercel preview deployments are served with noindex so they never appear in search results.
+const isPreviewDeployment = Boolean(process.env.VERCEL_ENV) && process.env.VERCEL_ENV !== "production";
 
 const nextConfig: NextConfig = {
   // Every page URL ends with "/" (e.g. /en/oils/). The permanent redirect for the
@@ -30,6 +32,7 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
         ],
       },
+      ...(isPreviewDeployment ? [{ source: "/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }] : []),
       { source: "/admin/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
       { source: "/api/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex" }] },
     ];
