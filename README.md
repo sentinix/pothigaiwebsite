@@ -52,7 +52,7 @@ SEO dashboard (audit, pages needing attention, CSV export, live crawl), products
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `NEXT_PUBLIC_SITE_URL` | yes (at build time) | Production origin, e.g. `https://www.pothigainaturals.com`. Used in canonicals, hreflang, sitemap, robots, JSON-LD |
+| `NEXT_PUBLIC_SITE_URL` | yes (at build time) | Production origin, e.g. `https://www.pothigainaturals.com`. Used in canonicals, hreflang, sitemap, robots, JSON-LD. On Vercel it falls back to the project's production domain if unset |
 | `API_URL` | yes | Server-side URL of the API |
 | `MEDIA_URL` | yes (prod) | Public origin serving uploaded images (usually the API's public URL); used by `next/image` |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | no | GA4 measurement ID (`G-…`) |
@@ -66,9 +66,26 @@ npm run lint && npm run typecheck && npm test && npm run build
 E2E_SITE_URL=http://localhost:3000 E2E_ADMIN_EMAIL=… E2E_ADMIN_PASSWORD=… npm run test:e2e
 ```
 
+## Deploying to Vercel
+
+The API is deployed separately on Render (see the backend repository's `render.yaml`). Deploy it first so you have its URL.
+
+1. In Vercel choose **Add New → Project** and import this GitHub repository. `vercel.json` sets the framework to Next.js and runs server functions in **Singapore (`sin1`)**, next to the Render API, to keep page rendering fast.
+2. Add these **Production** environment variables, then deploy:
+   - `NEXT_PUBLIC_SITE_URL`: your domain, e.g. `https://www.pothigainaturals.com`. It is read at build time, so redeploy after changing it.
+   - `API_URL`: the Render API URL, e.g. `https://pothigai-api.onrender.com`
+   - `MEDIA_URL`: the public origin that serves uploaded images, normally the same as `API_URL`. The build allows `next/image` to load from this host only.
+   - Optional: `NEXT_PUBLIC_GA_MEASUREMENT_ID` and `GOOGLE_SITE_VERIFICATION`.
+3. Under **Settings → Domains** add `www.pothigainaturals.com`, plus the apex domain redirecting to `www`, and follow Vercel's DNS instructions. Then set the API's `SITE_URL` and `CORS_ORIGINS` on Render to the same domain.
+4. Pushes to `main` deploy to production; pull requests get preview deployments.
+
+**Preview deployments are never indexed.** When `VERCEL_ENV` is not `production`, every response carries `X-Robots-Tag: noindex, nofollow` and `robots.txt` disallows everything. This keeps preview copies out of Google.
+
+**CI.** `.github/workflows/ci.yml` runs lint, typecheck, unit tests and a production build on every pull request and on `main`. To stop Vercel deploying a red commit, turn on the CI check as required in GitHub branch protection for `main`.
+
 ## Owner checklist before / after launch
 
-1. Deploy API + storefront over HTTPS on the final domain; set `NEXT_PUBLIC_SITE_URL` before building.
+1. Deploy the API on Render and the storefront on Vercel (see above) on the final domain; set `NEXT_PUBLIC_SITE_URL` before building.
 2. Replace the placeholder leaf mark (`public/logo.png`, `src/app/icon.svg`, `src/app/apple-icon.png`, `public/og-default.png`) with the real logo if one exists.
 3. In the admin: enter verified contact details, delivery areas/timelines and returns policy (Store settings); add real products with photos, alt text and Tamil translations; complete and publish the blog drafts.
 4. **Search Console**: add a Domain property (DNS) or URL-prefix property (set `GOOGLE_SITE_VERIFICATION`), submit `https://<domain>/sitemap.xml`, and check *Pages* and *Enhancements → Products / Breadcrumbs*.
